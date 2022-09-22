@@ -12,6 +12,7 @@ class new_player:
         self.games_won = 0
         self.games_tied = 0
         self.games_lost = 0
+        self.difficulty = 2
 
 
 def new_board():
@@ -130,12 +131,12 @@ def get_move(turn_board, player):
             else:
                 break
     else:
-        y, x = get_random_move(turn_board)
+        y, x = winning_and_loosing_move_ai(turn_board, player.side)
 
     return int(y), int(x)
 
 
-def get_random_move(turn_board):
+def random_move_ai(turn_board, side):
     """Takes a board and a player, then returns co-ordinates
     of a random empty cell."""
     good_move = False
@@ -145,6 +146,89 @@ def get_random_move(turn_board):
         cords = y, x
 
         good_move = is_valid_move(turn_board, cords)
+
+    return y, x
+
+
+def winning_move_ai(turn_board, side):
+    """Takes a board and a side, then returns co-ordinates
+    of a winning move if one exists, or a random empty cell."""
+    lines_to_check = winning_lines()
+    y = None
+    x = None
+
+    for line in lines_to_check:
+        line_values = [turn_board[y][x] for (y, x) in line]
+        # If there are two 'side and one '_' in line_values
+        # return co-ordinates of ' '.
+        if line_values[0] + line_values[1] + line_values[2]\
+                == ' ' + side + side:
+            y, x = line[0]
+        elif line_values[0] + line_values[1] + line_values[2] \
+                == side + ' ' + side:
+            y, x = line[1]
+        elif line_values[0] + line_values[1] + line_values[2] \
+                == side + side + ' ':
+            y, x = line[2]
+    # If no winning move get a random move.
+    if y is None:
+        y, x = random_move_ai(turn_board, side)
+
+    return y, x
+
+
+def winning_and_loosing_move_ai(turn_board, side):
+    """Takes a board and a side, looks for a winning move if one exists, if
+    there is no winning move it then looks to block the other side, if there is
+    no blocking move it then looks for a random empty cell and returns the
+     best co-ordinates"""
+    lines_to_check = winning_lines()
+    y = None
+    x = None
+
+    for line in lines_to_check:
+        line_values = [turn_board[y][x] for (y, x) in line]
+        # If there are two 'side and one '_' in line_values
+        # return co-ordinates of ' '.
+        if line_values[0] + line_values[1] + line_values[2]\
+                == ' ' + side + side:
+            y, x = line[0]
+        elif line_values[0] + line_values[1] + line_values[2] \
+                == side + ' ' + side:
+            y, x = line[1]
+        elif line_values[0] + line_values[1] + line_values[2] \
+                == side + side + ' ':
+            y, x = line[2]
+
+    # If there is no winning move block the other side.
+    if y is None:
+        for line in lines_to_check:
+            line_values = [turn_board[y][x] for (y, x) in line]
+            if side == 'X':
+                if line_values[0] + line_values[1] + line_values[2] \
+                        == ' ' + 'O' + 'O':
+                    y, x = line[0]
+                elif line_values[0] + line_values[1] + line_values[2] \
+                        == 'O' + ' ' + 'O':
+                    y, x = line[1]
+                elif line_values[0] + line_values[1] + line_values[2] \
+                        == 'O' + 'O' + ' ':
+                    y, x = line[2]
+
+            elif side == 'O':
+                if line_values[0] + line_values[1] + line_values[2] \
+                        == ' ' + 'X' + 'X':
+                    y, x = line[0]
+                elif line_values[0] + line_values[1] + line_values[2] \
+                        == 'X' + ' ' + 'X':
+                    y, x = line[1]
+                elif line_values[0] + line_values[1] + line_values[2] \
+                        == 'X' + 'X' + ' ':
+                    y, x = line[2]
+
+    # If still no move get a random move.
+    if y is None:
+        y, x = random_move_ai(turn_board, side)
 
     return y, x
 
@@ -283,6 +367,7 @@ def save_players():
 players = []
 
 players = load_players()
+
 
 while True:
     playing_game = main_menu(players)
