@@ -12,7 +12,6 @@ class new_player:
         self.games_won = 0
         self.games_tied = 0
         self.games_lost = 0
-        self.difficulty = 2
 
 
 def new_board():
