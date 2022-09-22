@@ -1,4 +1,5 @@
 import os
+import pickle
 from random import randint
 
 
@@ -18,7 +19,7 @@ def new_board():
     return [[' ' for line in range(0, 3)] for line in range(0, 3)]
 
 
-def main_menu():
+def main_menu(player):
     while True:
         print("\n\tTIC-TAC-TOE")
         print("\t[1] Single Player Game")
@@ -29,42 +30,43 @@ def main_menu():
         player_choice = input("\t Please make your selection: ").lower()
 
         if player_choice == '1':
-            player_2.human = False
+            player[1].human = False
             return True
 
         elif player_choice == '2':
-            player_2.human = True
+            player[1].human = True
             return True
 
         elif player_choice == 's':
-            settings_menu()
+            settings_menu(player)
 
         elif player_choice == 'q':
+            save_players()
             return False
 
         else:
             print("\tSorry I didn't understand that.")
 
 
-def settings_menu():
+def settings_menu(player):
     os.system('cls')
     while True:
         print("\n\tSettings & Statistics Menu")
-        print("\t[1] Rename %s" % player_1.name.title())
-        print("\t[2] Rename %s" % player_2.name.title())
+        print("\t[1] Rename %s" % player[0].name.title())
+        print("\t[2] Rename %s" % player[1].name.title())
         print("\t[S] Statistics")
         print("\t[Q] Exit Settings Menu")
 
         settings_choice = input("\tPlease make your selection: ").lower()
 
         if settings_choice == '1':
-            rename(player_1)
+            rename(player[0])
 
         elif settings_choice == '2':
-            rename(player_2)
+            rename(player[1])
 
         elif settings_choice == 's':
-            stats()
+            stats(player)
 
         elif settings_choice == 'q':
             return False
@@ -73,18 +75,19 @@ def settings_menu():
             print("\tSorry I didn't understand that.")
 
 
-def stats():
+def stats(player):
     os.system('cls')
     print("\n\tStatistics")
     print("\n\t'%s' has played %d games: \n\t\tWon: %s \n\t\tLost: %s "
-          "\n\t\tDrawn: %s" % (player_1.name.upper(), player_1.games_played,
-                               player_1.games_won, player_1.games_lost,
-                               player_1.games_tied))
+          "\n\t\tDrawn: %s" % (player[0].name.upper(),
+                               player[0].games_played, player[0].games_won,
+                               player[0].games_lost, player[0].games_tied))
     print("\n\t'%s' has played %d games: \n\t\tWon: %s \n\t\tLost: %s "
-          "\n\t\tDrawn: %s" % (player_2.name.upper(), player_2.games_played,
-                               player_2.games_won, player_2.games_lost,
-                               player_2.games_tied))
+          "\n\t\tDrawn: %s" % (player[1].name.upper(),
+                               player[1].games_played, player[1].games_won,
+                               player[1].games_lost, player[1].games_tied))
     input("\n\t Press enter to return to the Settings menu.")
+
 
 def rename(player):
     new_name = input(
@@ -127,12 +130,12 @@ def get_move(turn_board, player):
             else:
                 break
     else:
-        y, x = get_random_move(turn_board, player)
+        y, x = get_random_move(turn_board)
 
     return int(y), int(x)
 
 
-def get_random_move(turn_board, player):
+def get_random_move(turn_board):
     """Takes a board and a player, then returns co-ordinates
     of a random empty cell."""
     good_move = False
@@ -252,11 +255,37 @@ def check_for_draw(board):
     return draw
 
 
-player_1 = new_player('player 1', 'X')
-player_2 = new_player('player 2', 'O')
+def load_players():
+    try:
+        file = open('players.pydata', 'rb')
+        loaded_players = pickle.load(file)
+        file.close()
+    except FileNotFoundError:
+        player_1 = new_player('player 1', 'X')
+        player_2 = new_player('player 2', 'O')
+        loaded_players = [player_1, player_2]
+        print("No players were found. Default players added")
+
+    return loaded_players
+
+
+def save_players():
+    try:
+        file = open('players.pydata', 'wb')
+        pickle.dump(players, file)
+        file.close()
+        print("Player data has been saved.")
+    except Exception as e:
+        print(e)
+        print("Sorry, player data has not been saved.")
+
+
+players = []
+
+players = load_players()
 
 while True:
-    playing_game = main_menu()
+    playing_game = main_menu(players)
     if not playing_game:
         break
 
@@ -264,9 +293,9 @@ while True:
     while playing_game:
         # Player_1's turn
         game_board, playing_game = take_turn(
-            game_board, player_1, player_2)
+            game_board, players[0], players[1])
 
         if playing_game:
             # Player_2'a turn.
             game_board, playing_game = take_turn(
-                game_board, player_2, player_1)
+                game_board, players[1], players[0])
