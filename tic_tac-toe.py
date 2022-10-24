@@ -1,45 +1,41 @@
 import os
 import pickle
 from random import randint
+from time import sleep
 
 
 class new_player:
-    def __init__(self, name, side):
+    def __init__(self, name, side, ai='random_move_ai'):
         self.name = name
         self.side = side
         self.human = True
+        self.ai_type = ai
         self.games_played = 0
         self.games_won = 0
         self.games_tied = 0
         self.games_lost = 0
-        self.difficulty = 2
 
 
 def new_board():
     """Returns an empty, nested 3 x 3 list"""
-    return [[' ' for line in range(0, 3)] for line in range(0, 3)]
+    return [[' ' for line in range(3)] for line in range(3)]
 
 
-def main_menu(player):
+def main_menu(all_players):
+    os.system('cls')
     while True:
         print("\n\tTIC-TAC-TOE")
-        print("\t[1] Single Player Game")
-        print("\t[2] Multiplayer Game")
+        print("\t[P] Play Game")
         print("\t[S] Settings & Statistics")
         print("\t[Q] Quit Game")
 
         player_choice = input("\t Please make your selection: ").lower()
 
-        if player_choice == '1':
-            player[1].human = False
-            return True
-
-        elif player_choice == '2':
-            player[1].human = True
+        if player_choice == 'p':
             return True
 
         elif player_choice == 's':
-            settings_menu(player)
+            settings_menu(all_players)
 
         elif player_choice == 'q':
             save_players()
@@ -49,25 +45,21 @@ def main_menu(player):
             print("\tSorry I didn't understand that.")
 
 
-def settings_menu(player):
+def settings_menu(all_players):
     os.system('cls')
     while True:
         print("\n\tSettings & Statistics Menu")
-        print("\t[1] Rename %s" % player[0].name.title())
-        print("\t[2] Rename %s" % player[1].name.title())
+        print("\t[E] Edit players")
         print("\t[S] Statistics")
         print("\t[Q] Exit Settings Menu")
 
         settings_choice = input("\tPlease make your selection: ").lower()
 
-        if settings_choice == '1':
-            rename(player[0])
-
-        elif settings_choice == '2':
-            rename(player[1])
+        if settings_choice == 'e':
+            edit_players(all_players)
 
         elif settings_choice == 's':
-            stats(player)
+            stats(all_players)
 
         elif settings_choice == 'q':
             return False
@@ -90,12 +82,50 @@ def stats(player):
     input("\n\t Press enter to return to the Settings menu.")
 
 
-def rename(player):
-    new_name = input(
-        "\t%s, what would you like to be called? "
-        % player.name.title()).lower()
-    if new_name:
-        player.name = new_name
+def edit_players(player):
+    print("\tList of current players:")
+    for no, each in enumerate(player):
+        print("\t[%d] %s" % (no, each.name.title()))
+
+    while True:
+        num = int(input("\tPlease enter the number of the player "
+                        "you would like to edit: "))
+        if len(player) >= num - 1:
+            print("\tCurrent name is: %s" % player[num].name.title())
+            player[num].name = str(input("\tRename player: "))
+            break
+        else:
+            print("\tSorry I didn't understand that.")
+
+    while True:
+        print("\tPlayer is Human: %s" % player[num].human)
+        human = input("\tTrue or False? ").lower()
+        if human == 'true':
+            player[num].human = True
+            break
+        if human == 'false':
+            player[num].human = False
+            break
+
+    print("\tAI difficulties are:")
+    print("\t[1] Easy")
+    print("\t[2] Normal")
+    print("\t[3] Hard")
+    print("\t%s's AI is currently: %s" % (
+        player[num].name.title(), player[num].ai_type))
+    while True:
+        ai_difficulty = input("\tPlease select %s's AI difficulty: ")
+        if ai_difficulty == '1':
+            player[num].ai_type = 'random_move_ai'
+            break
+        elif ai_difficulty == '2':
+            player[num].ai_type = 'winning_move_ai'
+            break
+        elif ai_difficulty == '3':
+            player[num].ai_type = 'winning_and_loosing_move_ai'
+            break
+        else:
+            print("\tSorry I didn't understand that.")
 
 
 def print_board(board):
@@ -113,25 +143,17 @@ def get_move(turn_board, player):
     """Takes the name of the player and asks them for co-ordinates. Checks
     that the co-ordinates are reasonable and requests again if they are not.
     Function then returns the co-ordinates as integers."""
+    print("\n\tNext turn is %s's:" % player.name.title())
     if player.human:
-        while True:
-            y = input("\n\t%s enter your Y co-ordinate: "
-                      % player.name.title())
-            # If the input is not a co-ordinate, print an error and ask again.
-            if y != '0' and y != '1' and y != '2':
-                print("\tYou must enter a number between 0 and 2.")
-            else:
-                break
+        y, x = human_player(turn_board, player.side)
 
-        while True:
-            x = input("\t%s enter your X co-ordinate: " % player.name.title())
-            # If the input is not a co-ordinate, print an error and ask again.
-            if x != '0' and x != '1' and x != '2':
-                print("\tYou must enter a number between 0 and 2.")
-            else:
-                break
     else:
-        y, x = winning_and_loosing_move_ai(turn_board, player.side)
+        if player.ai_type == 'random_move_ai':
+            y, x = random_move_ai(turn_board, player.side)
+        elif player.ai_type == 'winning_move_ai':
+            y, x = winning_move_ai(turn_board, player.side)
+        elif player.ai_type == 'winning_and_loosing_move_ai':
+            y, x = winning_and_loosing_move_ai(turn_board, player.side)
 
     return int(y), int(x)
 
@@ -161,7 +183,7 @@ def winning_move_ai(turn_board, side):
         line_values = [turn_board[y][x] for (y, x) in line]
         # If there are two 'side and one '_' in line_values
         # return co-ordinates of ' '.
-        if line_values[0] + line_values[1] + line_values[2]\
+        if line_values[0] + line_values[1] + line_values[2] \
                 == ' ' + side + side:
             y, x = line[0]
         elif line_values[0] + line_values[1] + line_values[2] \
@@ -190,7 +212,7 @@ def winning_and_loosing_move_ai(turn_board, side):
         line_values = [turn_board[y][x] for (y, x) in line]
         # If there are two 'side and one '_' in line_values
         # return co-ordinates of ' '.
-        if line_values[0] + line_values[1] + line_values[2]\
+        if line_values[0] + line_values[1] + line_values[2] \
                 == ' ' + side + side:
             y, x = line[0]
         elif line_values[0] + line_values[1] + line_values[2] \
@@ -233,6 +255,37 @@ def winning_and_loosing_move_ai(turn_board, side):
     return y, x
 
 
+def human_player(board, side):
+    """Takes a board and a side and asks the human player to input the next
+    move."""
+    while True:
+        while True:
+            y = input("\tEnter the Y co-ordinate for '%s': " % side)
+            # If the input is not a co-ordinate, print an error and ask again.
+            if y != '0' and y != '1' and y != '2':
+                print("\tYou must enter a co-ordinate between 0 and 2.")
+            else:
+                break
+
+        while True:
+            x = input("\tEnter the X co-ordinate for '%s': " % side)
+            # If the input is not a co-ordinate, print an error and ask again.
+            if x != '0' and x != '1' and x != '2':
+                print("\tYou must enter a co-ordinate between 0 and 2.")
+            else:
+                break
+
+        cords = (int(y), int(x))
+        valid = is_valid_move(board, cords)
+
+        if valid:
+            break
+        else:
+            print("\tSorry, this move has already been made!!")
+
+    return int(y), int(x)
+
+
 def is_valid_move(board, cords):
     """Takes the board and entered co-ordinates and checks that the board is
     empty in that location. If empty returns True,
@@ -267,7 +320,7 @@ def take_turn(turn_board, turn_taker, other_player):
         else:
             os.system('cls')
             print_board(turn_board)
-            print("\n\tSorry, this move has already been made!!.")
+            print("\n\tSorry, this move has already been made!!")
 
     turn_board = make_move(turn_board, coordinates, turn_taker)
 
@@ -276,8 +329,8 @@ def take_turn(turn_board, turn_taker, other_player):
 
     if winner is not None:
         print_board(turn_board)
-        print("\n\t'%s' WINS! Congratulations %s you are the winner!!!"
-              % (turn_taker.side, turn_taker.name.title()))
+        print("\n\t'%s' WINS! CONGRATULATIONS %s!!!"
+              % (turn_taker.side, turn_taker.name.upper()))
         turn_taker.games_won += 1
         turn_taker.games_played += 1
         other_player.games_played += 1
@@ -374,13 +427,16 @@ while True:
     if not playing_game:
         break
 
+    playing_game = True
     game_board = new_board()
     while playing_game:
         # Player_1's turn
         game_board, playing_game = take_turn(
             game_board, players[0], players[1])
+        sleep(2)
 
         if playing_game:
-            # Player_2'a turn.
+            # Player_2's turn.
             game_board, playing_game = take_turn(
                 game_board, players[1], players[0])
+            sleep(2)
